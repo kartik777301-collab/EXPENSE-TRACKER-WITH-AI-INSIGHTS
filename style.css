@@ -1,0 +1,214 @@
+:root{
+    --bg:#f5f6fa;
+    --card:#ffffff;
+    --text:#2b2d3a;
+    --muted:#6b7080;
+    --border:#e2e4ea;
+    --primary:#3f6fee;
+    --primary-dark:#2e56c9;
+    --good:#22a06b;
+    --warn:#e0a72d;
+    --bad:#e05252;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI', Arial, sans-serif;
+    background:var(--bg);
+    color:var(--text);
+  }
+  header{
+    background:var(--primary);
+    color:#fff;
+    padding:18px 24px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+  header h1{
+    margin:0;
+    font-size:1.35rem;
+  }
+  header p{
+    margin:2px 0 0;
+    font-size:0.85rem;
+    opacity:0.9;
+  }
+  .container{
+    max-width:1100px;
+    margin:20px auto;
+    padding:0 16px 60px;
+    display:grid;
+    grid-template-columns: 1.1fr 1.4fr;
+    gap:18px;
+  }
+  @media (max-width:850px){
+    .container{grid-template-columns:1fr;}
+  }
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px 18px;
+    margin-bottom:18px;
+  }
+  .card h2{
+    margin:0 0 12px;
+    font-size:1.05rem;
+    border-bottom:1px solid var(--border);
+    padding-bottom:8px;
+  }
+  label{
+    display:block;
+    font-size:0.8rem;
+    color:var(--muted);
+    margin:10px 0 4px;
+  }
+  input, select{
+    width:100%;
+    padding:8px 10px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    font-size:0.9rem;
+    background:#fbfbfd;
+  }
+  input:focus, select:focus{
+    outline:none;
+    border-color:var(--primary);
+  }
+  .row2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  button{
+    cursor:pointer;
+    border:none;
+    border-radius:6px;
+    font-size:0.9rem;
+    padding:9px 14px;
+  }
+  .btn-primary{
+    background:var(--primary);
+    color:#fff;
+    width:100%;
+    margin-top:14px;
+    font-weight:600;
+  }
+  .btn-primary:hover{background:var(--primary-dark);}
+  .btn-secondary{
+    background:#eef1f9;
+    color:var(--text);
+  }
+  .btn-danger{
+    background:transparent;
+    color:var(--bad);
+    padding:4px 8px;
+    font-size:0.8rem;
+  }
+  .hint{
+    font-size:0.75rem;
+    color:var(--muted);
+    margin-top:6px;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:0.85rem;
+  }
+  th, td{
+    text-align:left;
+    padding:7px 6px;
+    border-bottom:1px solid var(--border);
+  }
+  th{
+    color:var(--muted);
+    font-weight:600;
+    font-size:0.75rem;
+    text-transform:uppercase;
+  }
+  .tag{
+    display:inline-block;
+    padding:2px 8px;
+    border-radius:20px;
+    font-size:0.72rem;
+    background:#eef1f9;
+    color:var(--primary-dark);
+  }
+  .recurring-tag{
+    background:#fdeecb;
+    color:#9a6b0c;
+  }
+  .summary-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .summary-box{
+    background:#f8f9fd;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:10px;
+    text-align:center;
+  }
+  .summary-box .val{
+    font-size:1.15rem;
+    font-weight:700;
+  }
+  .summary-box .lbl{
+    font-size:0.7rem;
+    color:var(--muted);
+    text-transform:uppercase;
+  }
+  .insight{
+    padding:10px 12px;
+    border-radius:8px;
+    font-size:0.85rem;
+    margin-bottom:8px;
+    border-left:4px solid var(--primary);
+    background:#f4f7ff;
+  }
+  .insight.warn{border-left-color:var(--warn); background:#fdf7e9;}
+  .insight.bad{border-left-color:var(--bad); background:#fdeded;}
+  .insight.good{border-left-color:var(--good); background:#eaf8f1;}
+  canvas{max-width:100%;}
+  .toolbar{
+    display:flex;
+    gap:8px;
+    margin-bottom:10px;
+    flex-wrap:wrap;
+  }
+  .empty{
+    color:var(--muted);
+    font-size:0.85rem;
+    padding:10px 0;
+  }
+  .budget-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+    margin-bottom:8px;
+    font-size:0.85rem;
+  }
+  .budget-bar-bg{
+    background:#eee;
+    border-radius:6px;
+    height:8px;
+    width:100%;
+    overflow:hidden;
+    margin-top:3px;
+  }
+  .budget-bar-fill{
+    height:100%;
+    background:var(--good);
+  }
+  footer{
+    text-align:center;
+    color:var(--muted);
+    font-size:0.75rem;
+    padding:20px;
+  }

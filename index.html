@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expense Tracker with AI Insights</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>💰 Expense Tracker with AI Insights</h1>
+    <p>Log expenses, auto-categorize, and get simple spending forecasts &mdash; all stored locally in your browser.</p>
+  </div>
+  <div>
+    <button class="btn-secondary" id="exportCsvBtn">⬇ Export CSV</button>
+  </div>
+</header>
+
+<div class="container">
+
+  
+  <div>
+    <div class="card">
+      <h2>Add Expense</h2>
+      <form id="expenseForm">
+        <label>Merchant / Description</label>
+        <input type="text" id="merchant" placeholder="e.g. Starbucks, Uber, Netflix" required>
+
+        <div class="row2">
+          <div>
+            <label>Amount</label>
+            <input type="number" id="amount" step="0.01" min="0" placeholder="0.00" required>
+          </div>
+          <div>
+            <label>Date</label>
+            <input type="date" id="date" required>
+          </div>
+        </div>
+
+        <label>Category <span class="hint" id="autoTagHint" style="display:none;">(auto-suggested)</span></label>
+        <select id="category">
+          <option value="">Auto-detect from description</option>
+          <option>Food</option>
+          <option>Transport</option>
+          <option>Utilities</option>
+          <option>Entertainment</option>
+          <option>Shopping</option>
+          <option>Health</option>
+          <option>Subscriptions</option>
+          <option>Other</option>
+        </select>
+
+        <button type="submit" class="btn-primary">+ Add Expense</button>
+        <p class="hint">Leave category as "Auto-detect" and our simple ML-style classifier will guess it from the description, the same way the real app would use a trained model.</p>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Set Monthly Budgets (optional)</h2>
+      <div id="budgetInputs"></div>
+      <p class="hint">Set a monthly limit per category to enable budget alerts below.</p>
+    </div>
+  </div>
+
+  
+  <div>
+    <div class="card">
+      <h2>This Month at a Glance</h2>
+      <div class="summary-grid">
+        <div class="summary-box">
+          <div class="val" id="totalThisMonth">$0.00</div>
+          <div class="lbl">Spent this month</div>
+        </div>
+        <div class="summary-box">
+          <div class="val" id="txnCount">0</div>
+          <div class="lbl">Transactions</div>
+        </div>
+        <div class="summary-box">
+          <div class="val" id="avgTxn">$0.00</div>
+          <div class="lbl">Avg / transaction</div>
+        </div>
+      </div>
+      <canvas id="categoryChart" height="180"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>AI Insights</h2>
+      <div id="insightsBox">
+        <p class="empty">Add a few expenses to unlock forecasts and insights.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Budget Status</h2>
+      <div id="budgetStatus">
+        <p class="empty">No budgets set yet.</p>
+      </div>
+    </div>
+  </div>
+
+  
+  <div class="card" style="grid-column:1 / -1;">
+    <h2>Spend by Day (last 30 days)</h2>
+    <canvas id="trendChart" height="90"></canvas>
+  </div>
+
+  <div class="card" style="grid-column:1 / -1;">
+    <div class="toolbar">
+      <h2 style="border:none;margin:0;flex:1;">Transaction History</h2>
+      <select id="filterCategory">
+        <option value="">All categories</option>
+      </select>
+    </div>
+    <table id="expenseTable">
+      <thead>
+        <tr><th>Date</th><th>Merchant</th><th>Category</th><th>Amount</th><th></th></tr>
+      </thead>
+      <tbody id="expenseTableBody"></tbody>
+    </table>
+    <p class="empty" id="tableEmpty">No transactions yet. Add your first expense above.</p>
+  </div>
+
+</div>
+
+<footer>Data is stored only in your browser (localStorage) &mdash; nothing is uploaded anywhere.</footer>
+
+<script src="script.js"></script>
+
+</body>
+</html>
