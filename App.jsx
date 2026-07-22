@@ -45,7 +45,6 @@ function monthKeyOf(dateStr) {
   return `${d.getFullYear()}-${d.getMonth()}`;
 }
 
-// Seed with a little sample data so the dashboard isn't empty on first load
 const SEED_EXPENSES = [
   { id: 1, merchant: "Starbucks", amount: 6.5, date: shiftDate(-2), category: "Food" },
   { id: 2, merchant: "Uber", amount: 14.2, date: shiftDate(-4), category: "Transport" },
@@ -104,7 +103,6 @@ export default function ExpenseTracker() {
     });
   }
 
-  // ---------- Derived data ----------
   const currentMonthKey = useMemo(() => {
     const d = new Date();
     return `${d.getFullYear()}-${d.getMonth()}`;
@@ -226,7 +224,6 @@ export default function ExpenseTracker() {
     URL.revokeObjectURL(url);
   }
 
-  // ---------- UI ----------
   return (
     <div style={{ fontFamily: "'Segoe UI', Arial, sans-serif", background: "#f5f6fa", minHeight: "100vh", color: "#2b2d3a" }}>
       <header
@@ -542,8 +539,6 @@ export default function ExpenseTracker() {
     </div>
   );
 }
-
-// ---------- Small presentational helpers ----------
 
 function Card({ title, children }) {
   return (
