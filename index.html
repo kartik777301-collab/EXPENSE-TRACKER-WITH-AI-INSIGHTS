@@ -3,131 +3,236 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Expense Tracker with AI Insights</title>
+<title>Ledgerline — Expense Tracker</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<link rel="stylesheet" href="style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<header>
-  <div>
-    <h1>💰 Expense Tracker with AI Insights</h1>
-    <p>Log expenses, auto-categorize, and get simple spending forecasts &mdash; all stored locally in your browser.</p>
-  </div>
-  <div>
-    <button class="btn-secondary" id="exportCsvBtn">⬇ Export CSV</button>
-  </div>
-</header>
 
-<div class="container">
+<div id="authScreen">
+  <div class="auth-card">
+    <div class="auth-brand"><span class="mark">Ledger<span>line</span></span></div>
+    <p class="auth-sub">Track spending, spot patterns, stay on budget.</p>
 
-  
-  <div>
-    <div class="card">
-      <h2>Add Expense</h2>
-      <form id="expenseForm">
-        <label>Merchant / Description</label>
-        <input type="text" id="merchant" placeholder="e.g. Starbucks, Uber, Netflix" required>
-
-        <div class="row2">
-          <div>
-            <label>Amount</label>
-            <input type="number" id="amount" step="0.01" min="0" placeholder="0.00" required>
-          </div>
-          <div>
-            <label>Date</label>
-            <input type="date" id="date" required>
-          </div>
-        </div>
-
-        <label>Category <span class="hint" id="autoTagHint" style="display:none;">(auto-suggested)</span></label>
-        <select id="category">
-          <option value="">Auto-detect from description</option>
-          <option>Food</option>
-          <option>Transport</option>
-          <option>Utilities</option>
-          <option>Entertainment</option>
-          <option>Shopping</option>
-          <option>Health</option>
-          <option>Subscriptions</option>
-          <option>Other</option>
-        </select>
-
-        <button type="submit" class="btn-primary">+ Add Expense</button>
-        <p class="hint">Leave category as "Auto-detect" and our simple ML-style classifier will guess it from the description, the same way the real app would use a trained model.</p>
-      </form>
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab active" id="tabLogin">Log in</button>
+      <button type="button" class="auth-tab" id="tabSignup">Sign up</button>
     </div>
 
-    <div class="card">
-      <h2>Set Monthly Budgets (optional)</h2>
-      <div id="budgetInputs"></div>
-      <p class="hint">Set a monthly limit per category to enable budget alerts below.</p>
-    </div>
-  </div>
+    <div class="auth-error" id="authError"></div>
 
-  
-  <div>
-    <div class="card">
-      <h2>This Month at a Glance</h2>
-      <div class="summary-grid">
-        <div class="summary-box">
-          <div class="val" id="totalThisMonth">$0.00</div>
-          <div class="lbl">Spent this month</div>
-        </div>
-        <div class="summary-box">
-          <div class="val" id="txnCount">0</div>
-          <div class="lbl">Transactions</div>
-        </div>
-        <div class="summary-box">
-          <div class="val" id="avgTxn">$0.00</div>
-          <div class="lbl">Avg / transaction</div>
-        </div>
+   
+    <form id="loginForm">
+      <div class="auth-field">
+        <label>Username</label>
+        <input type="text" id="loginUsername" autocomplete="username" required>
       </div>
-      <canvas id="categoryChart" height="180"></canvas>
-    </div>
-
-    <div class="card">
-      <h2>AI Insights</h2>
-      <div id="insightsBox">
-        <p class="empty">Add a few expenses to unlock forecasts and insights.</p>
+      <div class="auth-field">
+        <label>Password</label>
+        <input type="password" id="loginPassword" autocomplete="current-password" required>
       </div>
-    </div>
+      <button type="submit" class="auth-submit">Log in</button>
+    </form>
 
-    <div class="card">
-      <h2>Budget Status</h2>
-      <div id="budgetStatus">
-        <p class="empty">No budgets set yet.</p>
+    <form id="signupForm" style="display:none;">
+      <div class="auth-field">
+        <label>Choose a username</label>
+        <input type="text" id="signupUsername" autocomplete="username" required>
       </div>
-    </div>
-  </div>
+      <div class="auth-field">
+        <label>Choose a password</label>
+        <input type="password" id="signupPassword" autocomplete="new-password" required minlength="4">
+      </div>
+      <div class="auth-field">
+        <label>Confirm password</label>
+        <input type="password" id="signupPassword2" autocomplete="new-password" required minlength="4">
+      </div>
+      <button type="submit" class="auth-submit">Create account</button>
+    </form>
 
-  
-  <div class="card" style="grid-column:1 / -1;">
-    <h2>Spend by Day (last 30 days)</h2>
-    <canvas id="trendChart" height="90"></canvas>
+    <p class="auth-hint">Demo authentication only — accounts and data are stored in this browser's localStorage, not on a server, and passwords aren't securely encrypted. Don't reuse a real password here.</p>
   </div>
-
-  <div class="card" style="grid-column:1 / -1;">
-    <div class="toolbar">
-      <h2 style="border:none;margin:0;flex:1;">Transaction History</h2>
-      <select id="filterCategory">
-        <option value="">All categories</option>
-      </select>
-    </div>
-    <table id="expenseTable">
-      <thead>
-        <tr><th>Date</th><th>Merchant</th><th>Category</th><th>Amount</th><th></th></tr>
-      </thead>
-      <tbody id="expenseTableBody"></tbody>
-    </table>
-    <p class="empty" id="tableEmpty">No transactions yet. Add your first expense above.</p>
-  </div>
-
 </div>
 
-<footer>Data is stored only in your browser (localStorage) &mdash; nothing is uploaded anywhere.</footer>
+
+<div id="appScreen">
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="mark">Ledger<span>line</span></div>
+      <span class="tag">Expense Tracker</span>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-page="home"><span class="ic">⌂</span> Home</button>
+      <button class="nav-item" data-page="services"><span class="ic">⟳</span> Services</button>
+      <button class="nav-item" data-page="history"><span class="ic">≡</span> History</button>
+      <button class="nav-item" data-page="saved"><span class="ic">★</span> Saved</button>
+    </nav>
+    <div class="sidebar-user">
+      <div class="who" id="sidebarUsername">—</div>
+      <div class="role">Signed in</div>
+      <button class="logout-btn" id="logoutBtn">Log out</button>
+    </div>
+  </aside>
+
+  <main class="content">
+
+    <section class="page active" id="page-home">
+      <div class="page-head">
+        <h1>Home</h1>
+        <p>Your spending at a glance, plus quick-add for new expenses.</p>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <div class="card">
+            <h2>Add Expense</h2>
+            <form id="expenseForm">
+              <label>Merchant / Description</label>
+              <input type="text" id="merchant" placeholder="e.g. Starbucks, Uber, Netflix" required>
+
+              <div class="row2">
+                <div>
+                  <label>Amount</label>
+                  <input type="number" id="amount" step="0.01" min="0" placeholder="0.00" required>
+                </div>
+                <div>
+                  <label>Date</label>
+                  <input type="date" id="date" required>
+                </div>
+              </div>
+
+              <label>Category <span class="hint" id="autoTagHint" style="display:none;">(auto-suggested)</span></label>
+              <select id="category">
+                <option value="">Auto-detect from description</option>
+                <option>Food</option>
+                <option>Transport</option>
+                <option>Utilities</option>
+                <option>Entertainment</option>
+                <option>Shopping</option>
+                <option>Health</option>
+                <option>Subscriptions</option>
+                <option>Other</option>
+              </select>
+
+              <button type="submit" class="btn-primary">+ Add Expense</button>
+              <p class="hint">Leave category as "Auto-detect" and a simple keyword classifier will guess it from the description.</p>
+            </form>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <h2>This Month at a Glance</h2>
+            <div class="summary-grid">
+              <div class="summary-box">
+                <div class="val num" id="totalThisMonth">$0.00</div>
+                <div class="lbl">Spent this month</div>
+              </div>
+              <div class="summary-box">
+                <div class="val num" id="txnCount">0</div>
+                <div class="lbl">Transactions</div>
+              </div>
+              <div class="summary-box">
+                <div class="val num" id="avgTxn">$0.00</div>
+                <div class="lbl">Avg / transaction</div>
+              </div>
+            </div>
+            <canvas id="categoryChart" height="180"></canvas>
+          </div>
+
+          <div class="card">
+            <h2>AI Insights</h2>
+            <div id="insightsBox">
+              <p class="empty">Add a few expenses to unlock forecasts and insights.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Spend by Day (last 30 days)</h2>
+        <canvas id="trendChart" height="90"></canvas>
+      </div>
+    </section>
+
+    <section class="page" id="page-services">
+      <div class="page-head">
+        <h1>Services</h1>
+        <p>Recurring charges detected from your history, and monthly budgets per category.</p>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h2>Set Monthly Budgets</h2>
+          <div id="budgetInputs"></div>
+          <p class="hint">Set a monthly limit per category to enable budget alerts.</p>
+        </div>
+
+        <div class="card">
+          <h2>Budget Status</h2>
+          <div id="budgetStatus">
+            <p class="empty">No budgets set yet.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Detected Recurring Services</h2>
+        <div id="servicesList">
+          <p class="empty">No recurring charges detected yet. These show up once a merchant + amount repeats at least twice.</p>
+        </div>
+      </div>
+    </section>
+    <section class="page" id="page-history">
+      <div class="page-head">
+        <h1>History</h1>
+        <p>Every transaction you've logged. Star one to pin it to Saved.</p>
+      </div>
+
+      <div class="card">
+        <div class="toolbar">
+          <select id="filterCategory" style="max-width:220px;">
+            <option value="">All categories</option>
+          </select>
+          <button class="btn-secondary" id="exportCsvBtn">⬇ Export CSV</button>
+        </div>
+        <table id="expenseTable">
+          <thead>
+            <tr><th></th><th>Date</th><th>Merchant</th><th>Category</th><th>Amount</th><th></th></tr>
+          </thead>
+          <tbody id="expenseTableBody"></tbody>
+        </table>
+        <p class="empty" id="tableEmpty">No transactions yet. Add your first expense on the Home page.</p>
+      </div>
+    </section>
+
+   
+    <section class="page" id="page-saved">
+      <div class="page-head">
+        <h1>Saved</h1>
+        <p>Transactions you've starred for quick reference — receipts to double check, disputed charges, whatever you want to keep handy.</p>
+      </div>
+      <div class="card">
+        <table id="savedTable">
+          <thead>
+            <tr><th></th><th>Date</th><th>Merchant</th><th>Category</th><th>Amount</th></tr>
+          </thead>
+          <tbody id="savedTableBody"></tbody>
+        </table>
+        <p class="empty" id="savedEmpty">Nothing saved yet. Star a transaction in History to pin it here.</p>
+      </div>
+    </section>
+
+  </main>
+</div>
+<footer class="appfoot">Data is stored only in your browser (localStorage), scoped to your account — nothing is uploaded anywhere.</footer>
+</div>
 
 <script src="script.js"></script>
-
 </body>
 </html>
