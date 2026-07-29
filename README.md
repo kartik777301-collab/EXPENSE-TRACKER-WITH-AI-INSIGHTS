@@ -1,4 +1,4 @@
-# Ledgerline API
+# Ledgerline Expense tracker 
 
 Express + SQLite backend for the Ledgerline expense tracker. Replaces the
 old `localStorage`-only auth/data with real accounts (bcrypt password
