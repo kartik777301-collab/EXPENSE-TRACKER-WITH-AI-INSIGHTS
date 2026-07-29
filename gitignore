@@ -1,0 +1,4 @@
+node_modules/
+.env
+ledgerline.db
+ledgerline.db-journal
