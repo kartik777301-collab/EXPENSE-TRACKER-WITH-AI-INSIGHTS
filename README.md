@@ -2,7 +2,7 @@
 
 A browser-based expense tracker that auto-categorizes transactions, forecasts next month's spending, flags recurring charges, and tracks budgets — all stored locally via `localStorage`. No backend required.
 
-#Frontend
+#Frontend :
 https://expense-tracker-git-main-kartik-college.vercel.app/
 
 ## File Structure
