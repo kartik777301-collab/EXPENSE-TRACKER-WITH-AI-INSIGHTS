@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ledgerline — Expense Tracker</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#132a2f;
+    --paper:#f7f5ee;
+    --paper-dim:#efece0;
+    --card:#fffdf8;
+    --accent:#1f8a70;
+    --accent-dark:#146354;
+    --accent-soft:#e4f3ee;
+    --line:#dcd6c4;
+    --muted:#726f60;
+    --bad:#c0392b;
+    --bad-soft:#f8e6e3;
+    --warn:#c98a2c;
+    --warn-soft:#f8eedb;
+    --good:#1f8a70;
+    --radius:10px;
+    --mono:'JetBrains Mono', 'Courier New', monospace;
+    --display:'Fraunces', Georgia, serif;
+    --body:'Inter', -apple-system, 'Segoe UI', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:var(--body);
+    background:var(--paper);
+    color:var(--ink);
+  }
+  h1,h2,h3{ font-family:var(--display); font-weight:600; letter-spacing:-0.01em; }
+  .num{ font-family:var(--mono); font-variant-numeric:tabular-nums; }
+  button{ font-family:var(--body); cursor:pointer; border:none; border-radius:6px; }
+  input, select{ font-family:var(--body); }
+
+  /* ---------------- AUTH SCREEN ---------------- */
+  #authScreen{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:
+      repeating-linear-gradient(180deg, transparent, transparent 38px, var(--line) 38px, var(--line) 39px),
+      var(--paper);
+    padding:24px;
+  }
+  .auth-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    width:100%;
+    max-width:400px;
+    padding:36px 34px 30px;
+    box-shadow:0 18px 40px -22px rgba(19,42,47,0.35);
+    position:relative;
+  }
+  .auth-card::before{
+    content:"";
+    position:absolute;
+    left:0; top:22px; bottom:22px; width:3px;
+    background: repeating-linear-gradient(180deg, var(--accent) 0 6px, transparent 6px 12px);
+    border-radius:2px;
+  }
+  .auth-brand{
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+    margin-bottom:4px;
+  }
+  .auth-brand .mark{
+    font-family:var(--display);
+    font-size:1.7rem;
+    font-weight:700;
+    color:var(--ink);
+  }
+  .auth-brand .mark span{ color:var(--accent); }
+  .auth-sub{
+    color:var(--muted);
+    font-size:0.85rem;
+    margin:0 0 26px;
+  }
+  .auth-tabs{
+    display:flex;
+    border:1px solid var(--line);
+    border-radius:8px;
+    overflow:hidden;
+    margin-bottom:22px;
+  }
+  .auth-tab{
+    flex:1;
+    padding:9px 0;
+    text-align:center;
+    background:var(--paper-dim);
+    color:var(--muted);
+    font-size:0.82rem;
+    font-weight:600;
+    letter-spacing:0.02em;
+  }
+  .auth-tab.active{ background:var(--accent); color:#fff; }
+  .auth-field{ margin-bottom:14px; }
+  .auth-field label{
+    display:block;
+    font-size:0.72rem;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--muted);
+    margin-bottom:5px;
+  }
+  .auth-field input{
+    width:100%;
+    padding:10px 12px;
+    border:1px solid var(--line);
+    border-radius:7px;
+    font-size:0.92rem;
+    background:var(--paper);
+  }
+  .auth-field input:focus{ outline:none; border-color:var(--accent); background:#fff; }
+  .auth-error{
+    font-size:0.8rem;
+    color:var(--bad);
+    background:var(--bad-soft);
+    border-radius:6px;
+    padding:8px 10px;
+    margin-bottom:14px;
+    display:none;
+  }
+  .auth-submit{
+    width:100%;
+    background:var(--ink);
+    color:#fff;
+    font-weight:600;
+    font-size:0.92rem;
+    padding:11px 0;
+    border-radius:7px;
+    margin-top:6px;
+  }
+  .auth-submit:hover{ background:var(--accent-dark); }
+  .auth-hint{
+    text-align:center;
+    font-size:0.72rem;
+    color:var(--muted);
+    margin-top:16px;
+    line-height:1.5;
+  }
+
+  /* ---------------- APP SHELL ---------------- */
+  #appScreen{ display:none; min-height:100vh; }
+  .shell{ display:flex; min-height:100vh; }
+
+  .sidebar{
+    width:220px;
+    flex-shrink:0;
+    background:var(--ink);
+    color:#f2f0e6;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+  }
+  .sidebar::after{
+    content:"";
+    position:absolute;
+    right:0; top:0; bottom:0; width:10px;
+    background: radial-gradient(circle at 5px 0, transparent 4px, var(--ink) 4.5px) top left / 16px 16px repeat-y;
+    transform:translateX(100%);
+  }
+  .sidebar-brand{
+    padding:22px 20px 16px;
+    border-bottom:1px solid rgba(242,240,230,0.12);
+  }
+  .sidebar-brand .mark{
+    font-family:var(--display);
+    font-size:1.25rem;
+    font-weight:700;
+  }
+  .sidebar-brand .mark span{ color:#5fd4b0; }
+  .sidebar-brand .tag{
+    display:block;
+    font-size:0.68rem;
+    color:#a8ab9c;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    margin-top:2px;
+  }
+  nav.sidebar-nav{ padding:14px 10px; flex:1; }
+  .nav-item{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    width:100%;
+    text-align:left;
+    background:transparent;
+    color:#d7d6c9;
+    padding:10px 12px;
+    border-radius:7px;
+    font-size:0.88rem;
+    margin-bottom:3px;
+  }
+  .nav-item .ic{ font-size:1rem; width:18px; text-align:center; }
+  .nav-item:hover{ background:rgba(242,240,230,0.08); }
+  .nav-item.active{ background:var(--accent); color:#fff; font-weight:600; }
+  .sidebar-user{
+    padding:16px 18px;
+    border-top:1px solid rgba(242,240,230,0.12);
+    font-size:0.78rem;
+  }
+  .sidebar-user .who{ color:#f2f0e6; font-weight:600; margin-bottom:2px; }
+  .sidebar-user .role{ color:#a8ab9c; margin-bottom:10px; }
+  .logout-btn{
+    width:100%;
+    background:rgba(242,240,230,0.1);
+    color:#f2f0e6;
+    padding:7px 0;
+    border-radius:6px;
+    font-size:0.78rem;
+  }
+  .logout-btn:hover{ background:rgba(242,240,230,0.18); }
+
+  main.content{ flex:1; padding:26px 32px 60px; max-width:1180px; }
+  .page{ display:none; }
+  .page.active{ display:block; }
+  .page-head{ margin-bottom:20px; }
+  .page-head h1{ font-size:1.5rem; margin:0 0 4px; }
+  .page-head p{ color:var(--muted); font-size:0.85rem; margin:0; }
+
+  .grid2{ display:grid; grid-template-columns:1.05fr 1.4fr; gap:18px; align-items:start; }
+  @media (max-width:900px){ .grid2{ grid-template-columns:1fr; } .shell{ flex-direction:column; } .sidebar{ width:100%; } }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px 20px;
+    margin-bottom:18px;
+  }
+  .card h2{
+    margin:0 0 14px;
+    font-size:1rem;
+    border-bottom:1px solid var(--line);
+    padding-bottom:9px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  label{ display:block; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.04em; color:var(--muted); margin:10px 0 4px; }
+  input, select{
+    width:100%;
+    padding:8px 10px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    font-size:0.9rem;
+    background:var(--paper);
+  }
+  input:focus, select:focus{ outline:none; border-color:var(--accent); background:#fff; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .btn-primary{
+    background:var(--accent);
+    color:#fff;
+    width:100%;
+    margin-top:14px;
+    font-weight:600;
+    padding:10px 14px;
+    font-size:0.9rem;
+  }
+  .btn-primary:hover{ background:var(--accent-dark); }
+  .btn-secondary{ background:var(--paper-dim); color:var(--ink); padding:8px 13px; font-size:0.82rem; }
+  .btn-secondary:hover{ background:var(--line); }
+  .btn-danger{ background:transparent; color:var(--bad); padding:4px 8px; font-size:0.78rem; }
+  .btn-star{ background:transparent; color:var(--warn); padding:4px 6px; font-size:0.95rem; }
+  .btn-star.saved{ color:var(--warn); }
+  .btn-star:not(.saved){ color:var(--line); }
+  .hint{ font-size:0.74rem; color:var(--muted); margin-top:6px; line-height:1.4; }
+
+  table{ width:100%; border-collapse:collapse; font-size:0.85rem; }
+  th, td{ text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); }
+  th{ color:var(--muted); font-weight:600; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.04em; }
+  td.amt{ font-family:var(--mono); }
+  .tag{ display:inline-block; padding:2px 9px; border-radius:20px; font-size:0.7rem; background:var(--accent-soft); color:var(--accent-dark); }
+  .recurring-tag{ background:var(--warn-soft); color:#8a5f0f; }
+
+  .summary-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px; }
+  .summary-box{ background:var(--paper-dim); border:1px solid var(--line); border-radius:8px; padding:12px 10px; text-align:center; }
+  .summary-box .val{ font-family:var(--mono); font-size:1.2rem; font-weight:700; }
+  .summary-box .lbl{ font-size:0.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; margin-top:2px;}
+
+  .insight{ padding:10px 12px; border-radius:8px; font-size:0.85rem; margin-bottom:8px; border-left:4px solid var(--accent); background:var(--accent-soft); }
+  .insight.warn{ border-left-color:var(--warn); background:var(--warn-soft); }
+  .insight.bad{ border-left-color:var(--bad); background:var(--bad-soft); }
+  .insight.good{ border-left-color:var(--good); background:var(--accent-soft); }
+  canvas{ max-width:100%; }
+  .toolbar{ display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; align-items:center; }
+  .empty{ color:var(--muted); font-size:0.85rem; padding:14px 0; text-align:center; }
+
+  .budget-item{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px; font-size:0.85rem; }
+  .budget-bar-bg{ background:var(--paper-dim); border-radius:6px; height:8px; width:100%; overflow:hidden; margin-top:4px; }
+  .budget-bar-fill{ height:100%; background:var(--good); }
+
+  .service-card{
+    border:1px solid var(--line);
+    border-radius:9px;
+    padding:12px 14px;
+    margin-bottom:10px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:var(--paper-dim);
+  }
+  .service-card .name{ font-weight:600; font-size:0.9rem; }
+  .service-card .meta{ font-size:0.74rem; color:var(--muted); margin-top:2px; }
+  .service-card .amt{ font-family:var(--mono); font-weight:700; }
+
+  footer.appfoot{ text-align:center; color:var(--muted); font-size:0.72rem; padding:10px 20px 30px; }
+</style>
+</head>
+<body>
+
+<!-- =====================================================
+     AUTH SCREEN (Login / Sign up)
+===================================================== -->
+<div id="authScreen">
+  <div class="auth-card">
+    <div class="auth-brand"><span class="mark">Ledger<span>line</span></span></div>
+    <p class="auth-sub">Track spending, spot patterns, stay on budget.</p>
+
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab active" id="tabLogin">Log in</button>
+      <button type="button" class="auth-tab" id="tabSignup">Sign up</button>
+    </div>
+
+    <div class="auth-error" id="authError"></div>
+
+    <!-- Login form -->
+    <form id="loginForm">
+      <div class="auth-field">
+        <label>Username</label>
+        <input type="text" id="loginUsername" autocomplete="username" required>
+      </div>
+      <div class="auth-field">
+        <label>Password</label>
+        <input type="password" id="loginPassword" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="auth-submit">Log in</button>
+    </form>
+
+    <!-- Signup form -->
+    <form id="signupForm" style="display:none;">
+      <div class="auth-field">
+        <label>Choose a username</label>
+        <input type="text" id="signupUsername" autocomplete="username" required>
+      </div>
+      <div class="auth-field">
+        <label>Choose a password</label>
+        <input type="password" id="signupPassword" autocomplete="new-password" required minlength="4">
+      </div>
+      <div class="auth-field">
+        <label>Confirm password</label>
+        <input type="password" id="signupPassword2" autocomplete="new-password" required minlength="4">
+      </div>
+      <button type="submit" class="auth-submit">Create account</button>
+    </form>
+
+    <p class="auth-hint">Demo authentication only — accounts and data are stored in this browser's localStorage, not on a server, and passwords aren't securely encrypted. Don't reuse a real password here.</p>
+  </div>
+</div>
+
+<!-- =====================================================
+     MAIN APP
+===================================================== -->
+<div id="appScreen">
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="mark">Ledger<span>line</span></div>
+      <span class="tag">Expense Tracker</span>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-page="home"><span class="ic">⌂</span> Home</button>
+      <button class="nav-item" data-page="services"><span class="ic">⟳</span> Services</button>
+      <button class="nav-item" data-page="history"><span class="ic">≡</span> History</button>
+      <button class="nav-item" data-page="saved"><span class="ic">★</span> Saved</button>
+    </nav>
+    <div class="sidebar-user">
+      <div class="who" id="sidebarUsername">—</div>
+      <div class="role">Signed in</div>
+      <button class="logout-btn" id="logoutBtn">Log out</button>
+    </div>
+  </aside>
+
+  <main class="content">
+
+    <!-- ---------------- HOME PAGE ---------------- -->
+    <section class="page active" id="page-home">
+      <div class="page-head">
+        <h1>Home</h1>
+        <p>Your spending at a glance, plus quick-add for new expenses.</p>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <div class="card">
+            <h2>Add Expense</h2>
+            <form id="expenseForm">
+              <label>Merchant / Description</label>
+              <input type="text" id="merchant" placeholder="e.g. Starbucks, Uber, Netflix" required>
+
+              <div class="row2">
+                <div>
+                  <label>Amount</label>
+                  <input type="number" id="amount" step="0.01" min="0" placeholder="0.00" required>
+                </div>
+                <div>
+                  <label>Date</label>
+                  <input type="date" id="date" required>
+                </div>
+              </div>
+
+              <label>Category <span class="hint" id="autoTagHint" style="display:none;">(auto-suggested)</span></label>
+              <select id="category">
+                <option value="">Auto-detect from description</option>
+                <option>Food</option>
+                <option>Transport</option>
+                <option>Utilities</option>
+                <option>Entertainment</option>
+                <option>Shopping</option>
+                <option>Health</option>
+                <option>Subscriptions</option>
+                <option>Other</option>
+              </select>
+
+              <button type="submit" class="btn-primary">+ Add Expense</button>
+              <p class="hint">Leave category as "Auto-detect" and a simple keyword classifier will guess it from the description.</p>
+            </form>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <h2>This Month at a Glance</h2>
+            <div class="summary-grid">
+              <div class="summary-box">
+                <div class="val num" id="totalThisMonth">$0.00</div>
+                <div class="lbl">Spent this month</div>
+              </div>
+              <div class="summary-box">
+                <div class="val num" id="txnCount">0</div>
+                <div class="lbl">Transactions</div>
+              </div>
+              <div class="summary-box">
+                <div class="val num" id="avgTxn">$0.00</div>
+                <div class="lbl">Avg / transaction</div>
+              </div>
+            </div>
+            <canvas id="categoryChart" height="180"></canvas>
+          </div>
+
+          <div class="card">
+            <h2>AI Insights</h2>
+            <div id="insightsBox">
+              <p class="empty">Add a few expenses to unlock forecasts and insights.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Spend by Day (last 30 days)</h2>
+        <canvas id="trendChart" height="90"></canvas>
+      </div>
+    </section>
+
+    <!-- ---------------- SERVICES PAGE ---------------- -->
+    <section class="page" id="page-services">
+      <div class="page-head">
+        <h1>Services</h1>
+        <p>Recurring charges detected from your history, and monthly budgets per category.</p>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h2>Set Monthly Budgets</h2>
+          <div id="budgetInputs"></div>
+          <p class="hint">Set a monthly limit per category to enable budget alerts.</p>
+        </div>
+
+        <div class="card">
+          <h2>Budget Status</h2>
+          <div id="budgetStatus">
+            <p class="empty">No budgets set yet.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Detected Recurring Services</h2>
+        <div id="servicesList">
+          <p class="empty">No recurring charges detected yet. These show up once a merchant + amount repeats at least twice.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------- HISTORY PAGE ---------------- -->
+    <section class="page" id="page-history">
+      <div class="page-head">
+        <h1>History</h1>
+        <p>Every transaction you've logged. Star one to pin it to Saved.</p>
+      </div>
+
+      <div class="card">
+        <div class="toolbar">
+          <select id="filterCategory" style="max-width:220px;">
+            <option value="">All categories</option>
+          </select>
+          <button class="btn-secondary" id="exportCsvBtn">⬇ Export CSV</button>
+        </div>
+        <table id="expenseTable">
+          <thead>
+            <tr><th></th><th>Date</th><th>Merchant</th><th>Category</th><th>Amount</th><th></th></tr>
+          </thead>
+          <tbody id="expenseTableBody"></tbody>
+        </table>
+        <p class="empty" id="tableEmpty">No transactions yet. Add your first expense on the Home page.</p>
+      </div>
+    </section>
+
+    <!-- ---------------- SAVED PAGE ---------------- -->
+    <section class="page" id="page-saved">
+      <div class="page-head">
+        <h1>Saved</h1>
+        <p>Transactions you've starred for quick reference — receipts to double check, disputed charges, whatever you want to keep handy.</p>
+      </div>
+      <div class="card">
+        <table id="savedTable">
+          <thead>
+            <tr><th></th><th>Date</th><th>Merchant</th><th>Category</th><th>Amount</th></tr>
+          </thead>
+          <tbody id="savedTableBody"></tbody>
+        </table>
+        <p class="empty" id="savedEmpty">Nothing saved yet. Star a transaction in History to pin it here.</p>
+      </div>
+    </section>
+
+  </main>
+</div>
+<footer class="appfoot">Data is stored only in your browser (localStorage), scoped to your account — nothing is uploaded anywhere.</footer>
+</div>
+
+<script>
+/* =========================================================
+   AUTH (demo-only — client-side, not secure)
+========================================================= */
+const USERS_KEY = "ledgerlineUsers_v1";
+const SESSION_KEY = "ledgerlineSession_v1";
+
+function loadUsers(){ return JSON.parse(localStorage.getItem(USERS_KEY) || "{}"); }
+function saveUsers(u){ localStorage.setItem(USERS_KEY, JSON.stringify(u)); }
+
+// Not real crypto — just obfuscates plaintext for this local demo.
+function simpleHash(str){
+  let hash = 0;
+  for(let i=0;i<str.length;i++){
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return "h" + Math.abs(hash).toString(36) + "_" + str.length;
+}
+
+function showAuthError(msg){
+  const el = document.getElementById("authError");
+  el.textContent = msg;
+  el.style.display = msg ? "block" : "none";
+}
+
+const tabLogin = document.getElementById("tabLogin");
+const tabSignup = document.getElementById("tabSignup");
+const loginForm = document.getElementById("loginForm");
+const signupForm = document.getElementById("signupForm");
+
+tabLogin.addEventListener("click", ()=>{
+  tabLogin.classList.add("active"); tabSignup.classList.remove("active");
+  loginForm.style.display = "block"; signupForm.style.display = "none";
+  showAuthError("");
+});
+tabSignup.addEventListener("click", ()=>{
+  tabSignup.classList.add("active"); tabLogin.classList.remove("active");
+  signupForm.style.display = "block"; loginForm.style.display = "none";
+  showAuthError("");
+});
+
+loginForm.addEventListener("submit", (e)=>{
+  e.preventDefault();
+  const username = document.getElementById("loginUsername").value.trim();
+  const password = document.getElementById("loginPassword").value;
+  const users = loadUsers();
+  if(!users[username]){ showAuthError("No account found with that username."); return; }
+  if(users[username].passwordHash !== simpleHash(password)){ showAuthError("Incorrect password."); return; }
+  showAuthError("");
+  startSession(username);
+});
+
+signupForm.addEventListener("submit", (e)=>{
+  e.preventDefault();
+  const username = document.getElementById("signupUsername").value.trim();
+  const password = document.getElementById("signupPassword").value;
+  const password2 = document.getElementById("signupPassword2").value;
+  if(username.length < 2){ showAuthError("Username must be at least 2 characters."); return; }
+  if(password.length < 4){ showAuthError("Password must be at least 4 characters."); return; }
+  if(password !== password2){ showAuthError("Passwords don't match."); return; }
+  const users = loadUsers();
+  if(users[username]){ showAuthError("That username is already taken."); return; }
+  users[username] = { passwordHash: simpleHash(password), createdAt: new Date().toISOString() };
+  saveUsers(users);
+  showAuthError("");
+  startSession(username);
+});
+
+document.getElementById("logoutBtn").addEventListener("click", ()=>{
+  localStorage.removeItem(SESSION_KEY);
+  document.getElementById("appScreen").style.display = "none";
+  document.getElementById("authScreen").style.display = "flex";
+  loginForm.reset(); signupForm.reset();
+});
+
+function startSession(username){
+  localStorage.setItem(SESSION_KEY, username);
+  enterApp(username);
+}
+
+function enterApp(username){
+  currentUsername = username;
+  document.getElementById("authScreen").style.display = "none";
+  document.getElementById("appScreen").style.display = "block";
+  document.getElementById("sidebarUsername").textContent = username;
+  loadUserData();
+  renderAll();
+}
+
+// Auto-login if a session already exists
+let currentUsername = null;
+const existingSession = localStorage.getItem(SESSION_KEY);
+
+/* =========================================================
+   NAVIGATION
+========================================================= */
+document.querySelectorAll(".nav-item").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll(".nav-item").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    const page = btn.dataset.page;
+    document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+    document.getElementById("page-" + page).classList.add("active");
+  });
+});
+
+/* =========================================================
+   DATA MODEL & PER-USER PERSISTENCE
+========================================================= */
+const CATEGORIES = ["Food","Transport","Utilities","Entertainment","Shopping","Health","Subscriptions","Other"];
+
+let expenses = [];
+let budgets = {};
+let savedIds = [];
+
+function keyFor(base){ return `ledgerline_${base}_${currentUsername}`; }
+
+function loadUserData(){
+  expenses = JSON.parse(localStorage.getItem(keyFor("expenses")) || "[]");
+  budgets = JSON.parse(localStorage.getItem(keyFor("budgets")) || "{}");
+  savedIds = JSON.parse(localStorage.getItem(keyFor("saved")) || "[]");
+  renderBudgetInputs();
+}
+
+function saveExpenses(){ localStorage.setItem(keyFor("expenses"), JSON.stringify(expenses)); }
+function saveBudgets(){ localStorage.setItem(keyFor("budgets"), JSON.stringify(budgets)); }
+function saveSavedIds(){ localStorage.setItem(keyFor("saved"), JSON.stringify(savedIds)); }
+
+/* =========================================================
+   Simple "ML-style" keyword categorizer
+========================================================= */
+const KEYWORD_MAP = {
+  Food: ["restaurant","cafe","coffee","starbucks","pizza","food","grocery","supermarket","diner","burger","bakery","zomato","swiggy"],
+  Transport: ["uber","lyft","taxi","fuel","gas","petrol","metro","bus","train","parking","ola"],
+  Utilities: ["electric","water bill","internet","wifi","phone bill","utility","gas bill","broadband"],
+  Entertainment: ["netflix","movie","cinema","concert","spotify","game","theatre","hulu","disney+"],
+  Shopping: ["amazon","mall","clothing","shoes","electronics","store","shopping","flipkart"],
+  Health: ["pharmacy","doctor","hospital","clinic","medicine","gym","fitness","dental"],
+  Subscriptions: ["subscription","membership","monthly plan","annual plan","prime","icloud"]
+};
+
+function autoCategorize(desc){
+  const d = desc.toLowerCase();
+  for(const [cat, keywords] of Object.entries(KEYWORD_MAP)){
+    if(keywords.some(k => d.includes(k))) return cat;
+  }
+  return "Other";
+}
+
+/* =========================================================
+   Form handling (Home page)
+========================================================= */
+document.getElementById("date").valueAsDate = new Date();
+
+const catSelect = document.getElementById("category");
+const filterSelect = document.getElementById("filterCategory");
+CATEGORIES.forEach(c=>{
+  filterSelect.insertAdjacentHTML("beforeend", `<option value="${c}">${c}</option>`);
+});
+
+document.getElementById("merchant").addEventListener("input", (e)=>{
+  const hint = document.getElementById("autoTagHint");
+  if(catSelect.value === "" && e.target.value.trim().length > 2){
+    hint.style.display = "inline";
+  } else {
+    hint.style.display = "none";
+  }
+});
+
+document.getElementById("expenseForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  const merchant = document.getElementById("merchant").value.trim();
+  const amount = parseFloat(document.getElementById("amount").value);
+  const date = document.getElementById("date").value;
+  let category = document.getElementById("category").value;
+
+  if(!merchant || isNaN(amount) || !date) return;
+  if(!category) category = autoCategorize(merchant);
+
+  expenses.push({ id: Date.now(), merchant, amount, date, category });
+  saveExpenses();
+
+  this.reset();
+  document.getElementById("date").valueAsDate = new Date();
+  document.getElementById("autoTagHint").style.display = "none";
+
+  renderAll();
+});
+
+/* =========================================================
+   Budgets UI (Services page)
+========================================================= */
+function renderBudgetInputs(){
+  const box = document.getElementById("budgetInputs");
+  box.innerHTML = CATEGORIES.map(c => `
+    <div class="row2" style="align-items:end;margin-bottom:6px;">
+      <label style="margin:0;">${c}</label>
+      <input type="number" min="0" step="1" placeholder="No limit"
+        value="${budgets[c] ?? ''}" data-cat="${c}" class="budget-input">
+    </div>
+  `).join("");
+
+  box.querySelectorAll(".budget-input").forEach(inp=>{
+    inp.addEventListener("change", (e)=>{
+      const cat = e.target.dataset.cat;
+      const val = parseFloat(e.target.value);
+      if(!isNaN(val) && val > 0){ budgets[cat] = val; }
+      else { delete budgets[cat]; }
+      saveBudgets();
+      renderAll();
+    });
+  });
+}
+
+/* =========================================================
+   Rendering: table, summary, charts, insights, budgets, saved
+========================================================= */
+let categoryChart, trendChart;
+
+function currentMonthKey(){ const d = new Date(); return `${d.getFullYear()}-${d.getMonth()}`; }
+function monthKeyOf(dateStr){ const d = new Date(dateStr); return `${d.getFullYear()}-${d.getMonth()}`; }
+
+function recurringCounts(){
+  const counts = {};
+  expenses.forEach(e=>{
+    const key = e.merchant.toLowerCase() + "_" + Math.round(e.amount);
+    counts[key] = (counts[key]||0) + 1;
+  });
+  return counts;
+}
+
+function renderTable(){
+  const filter = filterSelect.value;
+  const tbody = document.getElementById("expenseTableBody");
+  const sorted = [...expenses].sort((a,b)=> new Date(b.date) - new Date(a.date));
+  const filtered = filter ? sorted.filter(e=>e.category===filter) : sorted;
+  const counts = recurringCounts();
+
+  document.getElementById("tableEmpty").style.display = filtered.length ? "none" : "block";
+
+  tbody.innerHTML = filtered.map(e=>{
+    const key = e.merchant.toLowerCase() + "_" + Math.round(e.amount);
+    const isRecurring = counts[key] >= 2;
+    const isSaved = savedIds.includes(e.id);
+    return `
+      <tr>
+        <td><button class="btn-star ${isSaved ? 'saved':''}" onclick="toggleSaved(${e.id})" title="${isSaved ? 'Remove from Saved' : 'Save this transaction'}">★</button></td>
+        <td>${e.date}</td>
+        <td>${e.merchant} ${isRecurring ? '<span class="tag recurring-tag">recurring</span>' : ''}</td>
+        <td><span class="tag">${e.category}</span></td>
+        <td class="amt num">$${e.amount.toFixed(2)}</td>
+        <td><button class="btn-danger" onclick="deleteExpense(${e.id})">Delete</button></td>
+      </tr>`;
+  }).join("");
+}
+
+function toggleSaved(id){
+  if(savedIds.includes(id)){ savedIds = savedIds.filter(x=>x!==id); }
+  else { savedIds.push(id); }
+  saveSavedIds();
+  renderAll();
+}
+
+function renderSaved(){
+  const tbody = document.getElementById("savedTableBody");
+  const savedExpenses = expenses.filter(e=>savedIds.includes(e.id))
+    .sort((a,b)=> new Date(b.date) - new Date(a.date));
+
+  document.getElementById("savedEmpty").style.display = savedExpenses.length ? "none" : "block";
+
+  tbody.innerHTML = savedExpenses.map(e=> `
+    <tr>
+      <td><button class="btn-star saved" onclick="toggleSaved(${e.id})" title="Remove from Saved">★</button></td>
+      <td>${e.date}</td>
+      <td>${e.merchant}</td>
+      <td><span class="tag">${e.category}</span></td>
+      <td class="amt num">$${e.amount.toFixed(2)}</td>
+    </tr>`).join("");
+}
+
+function deleteExpense(id){
+  expenses = expenses.filter(e=>e.id !== id);
+  savedIds = savedIds.filter(x=>x!==id);
+  saveExpenses();
+  saveSavedIds();
+  renderAll();
+}
+
+function renderSummary(){
+  const key = currentMonthKey();
+  const monthExpenses = expenses.filter(e=>monthKeyOf(e.date)===key);
+  const total = monthExpenses.reduce((s,e)=>s+e.amount,0);
+  const count = monthExpenses.length;
+  const avg = count ? total/count : 0;
+
+  document.getElementById("totalThisMonth").textContent = "$" + total.toFixed(2);
+  document.getElementById("txnCount").textContent = count;
+  document.getElementById("avgTxn").textContent = "$" + avg.toFixed(2);
+}
+
+function renderCategoryChart(){
+  const key = currentMonthKey();
+  const monthExpenses = expenses.filter(e=>monthKeyOf(e.date)===key);
+  const totals = {};
+  monthExpenses.forEach(e=>{ totals[e.category] = (totals[e.category]||0) + e.amount; });
+
+  const labels = Object.keys(totals);
+  const data = Object.values(totals);
+  const colors = ["#1f8a70","#c98a2c","#c0392b","#5b7fd6","#9b59d0","#2c9c9c","#d67e3c","#8a8674"];
+
+  const ctx = document.getElementById("categoryChart");
+  if(categoryChart) categoryChart.destroy();
+
+  if(labels.length === 0){
+    ctx.getContext("2d").clearRect(0,0,ctx.width,ctx.height);
+    return;
+  }
+
+  categoryChart = new Chart(ctx, {
+    type: "doughnut",
+    data: { labels, datasets:[{ data, backgroundColor: colors }]},
+    options: { plugins:{ legend:{ position:"bottom", labels:{ font:{size:11} } } } }
+  });
+}
+
+function renderTrendChart(){
+  const days = [];
+  const totalsByDay = {};
+  for(let i=29;i>=0;i--){
+    const d = new Date();
+    d.setDate(d.getDate()-i);
+    const key = d.toISOString().slice(0,10);
+    days.push(key);
+    totalsByDay[key] = 0;
+  }
+  expenses.forEach(e=>{
+    if(totalsByDay.hasOwnProperty(e.date)){ totalsByDay[e.date] += e.amount; }
+  });
+
+  const ctx = document.getElementById("trendChart");
+  if(trendChart) trendChart.destroy();
+  trendChart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: days.map(d=>d.slice(5)),
+      datasets: [{ label:"Spend", data: days.map(d=>totalsByDay[d]), backgroundColor:"#1f8a70" }]
+    },
+    options: {
+      plugins:{ legend:{ display:false } },
+      scales:{ x:{ ticks:{ maxRotation:90, minRotation:90, font:{size:9} } } }
+    }
+  });
+}
+
+function renderInsights(){
+  const box = document.getElementById("insightsBox");
+  if(expenses.length < 3){
+    box.innerHTML = '<p class="empty">Add a few expenses to unlock forecasts and insights.</p>';
+    return;
+  }
+
+  const byMonth = {};
+  expenses.forEach(e=>{ const k = monthKeyOf(e.date); byMonth[k] = (byMonth[k]||0) + e.amount; });
+  const months = Object.keys(byMonth).sort();
+  const values = months.map(m=>byMonth[m]);
+
+  let html = "";
+
+  if(values.length >= 2){
+    const recent = values.slice(-3);
+    const forecast = recent.reduce((s,v,i)=> s + v*(i+1), 0) / recent.reduce((s,_,i)=>s+(i+1),0);
+    html += `<div class="insight">📈 Based on recent months, projected spend next month is roughly <strong>$${forecast.toFixed(2)}</strong>.</div>`;
+
+    const lastMonth = values[values.length-1];
+    const prevMonth = values[values.length-2];
+    if(prevMonth > 0){
+      const change = ((lastMonth - prevMonth)/prevMonth*100);
+      if(change > 10){
+        html += `<div class="insight warn">⚠️ Spending increased by ${change.toFixed(0)}% compared to the previous month.</div>`;
+      } else if(change < -10){
+        html += `<div class="insight good">✅ Nice, spending dropped ${Math.abs(change).toFixed(0)}% compared to the previous month.</div>`;
+      }
+    }
+  } else {
+    html += `<div class="insight">📈 Keep logging expenses across a couple of months to unlock a spending forecast.</div>`;
+  }
+
+  const key = currentMonthKey();
+  const monthExpenses = expenses.filter(e=>monthKeyOf(e.date)===key);
+  const catTotals = {};
+  monthExpenses.forEach(e=>{ catTotals[e.category] = (catTotals[e.category]||0)+e.amount; });
+  const topCat = Object.entries(catTotals).sort((a,b)=>b[1]-a[1])[0];
+  if(topCat){
+    html += `<div class="insight">🏷️ Your top spending category this month is <strong>${topCat[0]}</strong> at $${topCat[1].toFixed(2)}.</div>`;
+  }
+
+  const counts = recurringCounts();
+  const recurringCount = Object.values(counts).filter(c=>c>=2).length;
+  if(recurringCount > 0){
+    html += `<div class="insight">🔁 Detected ${recurringCount} likely recurring charge${recurringCount>1?'s':''}. See the Services page for details.</div>`;
+  }
+
+  box.innerHTML = html;
+}
+
+function renderBudgets(){
+  const box = document.getElementById("budgetStatus");
+  const key = currentMonthKey();
+  const monthExpenses = expenses.filter(e=>monthKeyOf(e.date)===key);
+  const catTotals = {};
+  monthExpenses.forEach(e=>{ catTotals[e.category] = (catTotals[e.category]||0)+e.amount; });
+
+  const activeBudgets = Object.entries(budgets);
+  if(activeBudgets.length === 0){
+    box.innerHTML = '<p class="empty">No budgets set yet. Set one on the left to see alerts here.</p>';
+    return;
+  }
+
+  box.innerHTML = activeBudgets.map(([cat, limit])=>{
+    const spent = catTotals[cat] || 0;
+    const pct = Math.min(100, (spent/limit)*100);
+    let barColor = "var(--good)";
+    let note = "";
+    if(pct >= 100){ barColor = "var(--bad)"; note = " — over budget!"; }
+    else if(pct >= 80){ barColor = "var(--warn)"; note = " — approaching limit"; }
+
+    return `
+      <div class="budget-item">
+        <div style="flex:1;">
+          <div>${cat}: <span class="num">$${spent.toFixed(2)} / $${limit.toFixed(2)}</span>${note}</div>
+          <div class="budget-bar-bg"><div class="budget-bar-fill" style="width:${pct}%;background:${barColor};"></div></div>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function renderServices(){
+  const box = document.getElementById("servicesList");
+  const counts = recurringCounts();
+  // Build one entry per recurring merchant+amount pair, using the most recent occurrence
+  const seen = {};
+  expenses.forEach(e=>{
+    const key = e.merchant.toLowerCase() + "_" + Math.round(e.amount);
+    if(counts[key] >= 2){
+      if(!seen[key] || new Date(e.date) > new Date(seen[key].date)){ seen[key] = e; }
+    }
+  });
+  const services = Object.entries(seen);
+
+  if(services.length === 0){
+    box.innerHTML = '<p class="empty">No recurring charges detected yet. These show up once a merchant + amount repeats at least twice.</p>';
+    return;
+  }
+
+  box.innerHTML = services.map(([key, e])=>{
+    const timesSeen = counts[key];
+    return `
+      <div class="service-card">
+        <div>
+          <div class="name">${e.merchant}</div>
+          <div class="meta">${e.category} · seen ${timesSeen} times · last charge ${e.date}</div>
+        </div>
+        <div class="amt num">$${e.amount.toFixed(2)}</div>
+      </div>`;
+  }).join("");
+}
+
+function renderAll(){
+  renderTable();
+  renderSummary();
+  renderCategoryChart();
+  renderTrendChart();
+  renderInsights();
+  renderBudgets();
+  renderServices();
+  renderSaved();
+}
+
+filterSelect.addEventListener("change", renderTable);
+
+/* =========================================================
+   CSV export
+========================================================= */
+document.getElementById("exportCsvBtn").addEventListener("click", ()=>{
+  if(expenses.length === 0){ alert("No transactions to export yet."); return; }
+  let csv = "Date,Merchant,Category,Amount\n";
+  expenses.forEach(e=>{
+    csv += `${e.date},"${e.merchant.replace(/"/g,'""')}",${e.category},${e.amount.toFixed(2)}\n`;
+  });
+  const blob = new Blob([csv], {type:"text/csv"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "expenses.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+/* =========================================================
+   Init
+========================================================= */
+if(existingSession && loadUsers()[existingSession]){
+  enterApp(existingSession);
+}
+</script>
+
+</body>
+</html>
