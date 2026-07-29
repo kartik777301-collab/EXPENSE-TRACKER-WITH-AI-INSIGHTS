@@ -1,4 +1,4 @@
-# Ledgerline
+# Ledgerline - Expense Tracker
 
 A lightweight expense tracker — log spending, auto-categorize by keyword,
 catch recurring charges, set budgets, and see trends at a glance.
