@@ -41,7 +41,7 @@
   button{ font-family:var(--body); cursor:pointer; border:none; border-radius:6px; }
   input, select{ font-family:var(--body); }
 
-  /* ---------------- AUTH SCREEN ---------------- */
+
   #authScreen{
     min-height:100vh;
     display:flex;
@@ -151,7 +151,6 @@
     line-height:1.5;
   }
 
-  /* ---------------- APP SHELL ---------------- */
   #appScreen{ display:none; min-height:100vh; }
   .shell{ display:flex; min-height:100vh; }
 
@@ -321,9 +320,7 @@
 </head>
 <body>
 
-<!-- =====================================================
-     AUTH SCREEN (Login / Sign up)
-===================================================== -->
+
 <div id="authScreen">
   <div class="auth-card">
     <div class="auth-brand"><span class="mark">Ledger<span>line</span></span></div>
@@ -370,9 +367,7 @@
   </div>
 </div>
 
-<!-- =====================================================
-     MAIN APP
-===================================================== -->
+
 <div id="appScreen">
 <div class="shell">
 
@@ -396,7 +391,7 @@
 
   <main class="content">
 
-    <!-- ---------------- HOME PAGE ---------------- -->
+ 
     <section class="page active" id="page-home">
       <div class="page-head">
         <h1>Home</h1>
@@ -476,7 +471,7 @@
       </div>
     </section>
 
-    <!-- ---------------- SERVICES PAGE ---------------- -->
+
     <section class="page" id="page-services">
       <div class="page-head">
         <h1>Services</h1>
@@ -506,7 +501,7 @@
       </div>
     </section>
 
-    <!-- ---------------- HISTORY PAGE ---------------- -->
+
     <section class="page" id="page-history">
       <div class="page-head">
         <h1>History</h1>
@@ -530,7 +525,7 @@
       </div>
     </section>
 
-    <!-- ---------------- SAVED PAGE ---------------- -->
+
     <section class="page" id="page-saved">
       <div class="page-head">
         <h1>Saved</h1>
@@ -553,9 +548,7 @@
 </div>
 
 <script>
-/* =========================================================
-   AUTH (demo-only — client-side, not secure)
-========================================================= */
+
 const USERS_KEY = "ledgerlineUsers_v1";
 const SESSION_KEY = "ledgerlineSession_v1";
 
@@ -642,13 +635,10 @@ function enterApp(username){
   renderAll();
 }
 
-// Auto-login if a session already exists
+
 let currentUsername = null;
 const existingSession = localStorage.getItem(SESSION_KEY);
 
-/* =========================================================
-   NAVIGATION
-========================================================= */
 document.querySelectorAll(".nav-item").forEach(btn=>{
   btn.addEventListener("click", ()=>{
     document.querySelectorAll(".nav-item").forEach(b=>b.classList.remove("active"));
@@ -659,9 +649,7 @@ document.querySelectorAll(".nav-item").forEach(btn=>{
   });
 });
 
-/* =========================================================
-   DATA MODEL & PER-USER PERSISTENCE
-========================================================= */
+
 const CATEGORIES = ["Food","Transport","Utilities","Entertainment","Shopping","Health","Subscriptions","Other"];
 
 let expenses = [];
@@ -681,9 +669,7 @@ function saveExpenses(){ localStorage.setItem(keyFor("expenses"), JSON.stringify
 function saveBudgets(){ localStorage.setItem(keyFor("budgets"), JSON.stringify(budgets)); }
 function saveSavedIds(){ localStorage.setItem(keyFor("saved"), JSON.stringify(savedIds)); }
 
-/* =========================================================
-   Simple "ML-style" keyword categorizer
-========================================================= */
+
 const KEYWORD_MAP = {
   Food: ["restaurant","cafe","coffee","starbucks","pizza","food","grocery","supermarket","diner","burger","bakery","zomato","swiggy"],
   Transport: ["uber","lyft","taxi","fuel","gas","petrol","metro","bus","train","parking","ola"],
@@ -702,9 +688,7 @@ function autoCategorize(desc){
   return "Other";
 }
 
-/* =========================================================
-   Form handling (Home page)
-========================================================= */
+
 document.getElementById("date").valueAsDate = new Date();
 
 const catSelect = document.getElementById("category");
@@ -742,9 +726,7 @@ document.getElementById("expenseForm").addEventListener("submit", function(e){
   renderAll();
 });
 
-/* =========================================================
-   Budgets UI (Services page)
-========================================================= */
+
 function renderBudgetInputs(){
   const box = document.getElementById("budgetInputs");
   box.innerHTML = CATEGORIES.map(c => `
@@ -767,9 +749,7 @@ function renderBudgetInputs(){
   });
 }
 
-/* =========================================================
-   Rendering: table, summary, charts, insights, budgets, saved
-========================================================= */
+
 let categoryChart, trendChart;
 
 function currentMonthKey(){ const d = new Date(); return `${d.getFullYear()}-${d.getMonth()}`; }
@@ -1033,9 +1013,7 @@ function renderAll(){
 
 filterSelect.addEventListener("change", renderTable);
 
-/* =========================================================
-   CSV export
-========================================================= */
+
 document.getElementById("exportCsvBtn").addEventListener("click", ()=>{
   if(expenses.length === 0){ alert("No transactions to export yet."); return; }
   let csv = "Date,Merchant,Category,Amount\n";
@@ -1051,9 +1029,7 @@ document.getElementById("exportCsvBtn").addEventListener("click", ()=>{
   URL.revokeObjectURL(url);
 });
 
-/* =========================================================
-   Init
-========================================================= */
+
 if(existingSession && loadUsers()[existingSession]){
   enterApp(existingSession);
 }
