@@ -1,12 +1,123 @@
-const STORAGE_KEY = "expenseTrackerData_v1";
-const BUDGET_KEY = "expenseTrackerBudgets_v1";
+const USERS_KEY = "ledgerlineUsers_v1";
+const SESSION_KEY = "ledgerlineSession_v1";
+
+function loadUsers(){ return JSON.parse(localStorage.getItem(USERS_KEY) || "{}"); }
+function saveUsers(u){ localStorage.setItem(USERS_KEY, JSON.stringify(u)); }
+
+// Not real crypto — just obfuscates plaintext for this local demo.
+function simpleHash(str){
+  let hash = 0;
+  for(let i=0;i<str.length;i++){
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return "h" + Math.abs(hash).toString(36) + "_" + str.length;
+}
+
+function showAuthError(msg){
+  const el = document.getElementById("authError");
+  el.textContent = msg;
+  el.style.display = msg ? "block" : "none";
+}
+
+const tabLogin = document.getElementById("tabLogin");
+const tabSignup = document.getElementById("tabSignup");
+const loginForm = document.getElementById("loginForm");
+const signupForm = document.getElementById("signupForm");
+
+tabLogin.addEventListener("click", ()=>{
+  tabLogin.classList.add("active"); tabSignup.classList.remove("active");
+  loginForm.style.display = "block"; signupForm.style.display = "none";
+  showAuthError("");
+});
+tabSignup.addEventListener("click", ()=>{
+  tabSignup.classList.add("active"); tabLogin.classList.remove("active");
+  signupForm.style.display = "block"; loginForm.style.display = "none";
+  showAuthError("");
+});
+
+loginForm.addEventListener("submit", (e)=>{
+  e.preventDefault();
+  const username = document.getElementById("loginUsername").value.trim();
+  const password = document.getElementById("loginPassword").value;
+  const users = loadUsers();
+  if(!users[username]){ showAuthError("No account found with that username."); return; }
+  if(users[username].passwordHash !== simpleHash(password)){ showAuthError("Incorrect password."); return; }
+  showAuthError("");
+  startSession(username);
+});
+
+signupForm.addEventListener("submit", (e)=>{
+  e.preventDefault();
+  const username = document.getElementById("signupUsername").value.trim();
+  const password = document.getElementById("signupPassword").value;
+  const password2 = document.getElementById("signupPassword2").value;
+  if(username.length < 2){ showAuthError("Username must be at least 2 characters."); return; }
+  if(password.length < 4){ showAuthError("Password must be at least 4 characters."); return; }
+  if(password !== password2){ showAuthError("Passwords don't match."); return; }
+  const users = loadUsers();
+  if(users[username]){ showAuthError("That username is already taken."); return; }
+  users[username] = { passwordHash: simpleHash(password), createdAt: new Date().toISOString() };
+  saveUsers(users);
+  showAuthError("");
+  startSession(username);
+});
+
+document.getElementById("logoutBtn").addEventListener("click", ()=>{
+  localStorage.removeItem(SESSION_KEY);
+  document.getElementById("appScreen").style.display = "none";
+  document.getElementById("authScreen").style.display = "flex";
+  loginForm.reset(); signupForm.reset();
+});
+
+function startSession(username){
+  localStorage.setItem(SESSION_KEY, username);
+  enterApp(username);
+}
+
+function enterApp(username){
+  currentUsername = username;
+  document.getElementById("authScreen").style.display = "none";
+  document.getElementById("appScreen").style.display = "block";
+  document.getElementById("sidebarUsername").textContent = username;
+  loadUserData();
+  renderAll();
+}
+
+// Auto-login if a session already exists
+let currentUsername = null;
+const existingSession = localStorage.getItem(SESSION_KEY);
+
+
+document.querySelectorAll(".nav-item").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll(".nav-item").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    const page = btn.dataset.page;
+    document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+    document.getElementById("page-" + page).classList.add("active");
+  });
+});
+
+
 const CATEGORIES = ["Food","Transport","Utilities","Entertainment","Shopping","Health","Subscriptions","Other"];
 
-let expenses = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-let budgets = JSON.parse(localStorage.getItem(BUDGET_KEY) || "{}");
+let expenses = [];
+let budgets = {};
+let savedIds = [];
 
-function saveExpenses(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses)); }
-function saveBudgets(){ localStorage.setItem(BUDGET_KEY, JSON.stringify(budgets)); }
+function keyFor(base){ return `ledgerline_${base}_${currentUsername}`; }
+
+function loadUserData(){
+  expenses = JSON.parse(localStorage.getItem(keyFor("expenses")) || "[]");
+  budgets = JSON.parse(localStorage.getItem(keyFor("budgets")) || "{}");
+  savedIds = JSON.parse(localStorage.getItem(keyFor("saved")) || "[]");
+  renderBudgetInputs();
+}
+
+function saveExpenses(){ localStorage.setItem(keyFor("expenses"), JSON.stringify(expenses)); }
+function saveBudgets(){ localStorage.setItem(keyFor("budgets"), JSON.stringify(budgets)); }
+function saveSavedIds(){ localStorage.setItem(keyFor("saved"), JSON.stringify(savedIds)); }
 
 
 const KEYWORD_MAP = {
@@ -55,10 +166,7 @@ document.getElementById("expenseForm").addEventListener("submit", function(e){
   if(!merchant || isNaN(amount) || !date) return;
   if(!category) category = autoCategorize(merchant);
 
-  expenses.push({
-    id: Date.now(),
-    merchant, amount, date, category
-  });
+  expenses.push({ id: Date.now(), merchant, amount, date, category });
   saveExpenses();
 
   this.reset();
@@ -94,14 +202,16 @@ function renderBudgetInputs(){
 
 let categoryChart, trendChart;
 
-function currentMonthKey(){
-  const d = new Date();
-  return `${d.getFullYear()}-${d.getMonth()}`;
-}
+function currentMonthKey(){ const d = new Date(); return `${d.getFullYear()}-${d.getMonth()}`; }
+function monthKeyOf(dateStr){ const d = new Date(dateStr); return `${d.getFullYear()}-${d.getMonth()}`; }
 
-function monthKeyOf(dateStr){
-  const d = new Date(dateStr);
-  return `${d.getFullYear()}-${d.getMonth()}`;
+function recurringCounts(){
+  const counts = {};
+  expenses.forEach(e=>{
+    const key = e.merchant.toLowerCase() + "_" + Math.round(e.amount);
+    counts[key] = (counts[key]||0) + 1;
+  });
+  return counts;
 }
 
 function renderTable(){
@@ -109,32 +219,55 @@ function renderTable(){
   const tbody = document.getElementById("expenseTableBody");
   const sorted = [...expenses].sort((a,b)=> new Date(b.date) - new Date(a.date));
   const filtered = filter ? sorted.filter(e=>e.category===filter) : sorted;
-
-  const counts = {};
-  expenses.forEach(e=>{
-    const key = e.merchant.toLowerCase() + "_" + Math.round(e.amount);
-    counts[key] = (counts[key]||0) + 1;
-  });
+  const counts = recurringCounts();
 
   document.getElementById("tableEmpty").style.display = filtered.length ? "none" : "block";
 
   tbody.innerHTML = filtered.map(e=>{
     const key = e.merchant.toLowerCase() + "_" + Math.round(e.amount);
     const isRecurring = counts[key] >= 2;
+    const isSaved = savedIds.includes(e.id);
     return `
       <tr>
+        <td><button class="btn-star ${isSaved ? 'saved':''}" onclick="toggleSaved(${e.id})" title="${isSaved ? 'Remove from Saved' : 'Save this transaction'}">★</button></td>
         <td>${e.date}</td>
         <td>${e.merchant} ${isRecurring ? '<span class="tag recurring-tag">recurring</span>' : ''}</td>
         <td><span class="tag">${e.category}</span></td>
-        <td>$${e.amount.toFixed(2)}</td>
+        <td class="amt num">$${e.amount.toFixed(2)}</td>
         <td><button class="btn-danger" onclick="deleteExpense(${e.id})">Delete</button></td>
       </tr>`;
   }).join("");
 }
 
+function toggleSaved(id){
+  if(savedIds.includes(id)){ savedIds = savedIds.filter(x=>x!==id); }
+  else { savedIds.push(id); }
+  saveSavedIds();
+  renderAll();
+}
+
+function renderSaved(){
+  const tbody = document.getElementById("savedTableBody");
+  const savedExpenses = expenses.filter(e=>savedIds.includes(e.id))
+    .sort((a,b)=> new Date(b.date) - new Date(a.date));
+
+  document.getElementById("savedEmpty").style.display = savedExpenses.length ? "none" : "block";
+
+  tbody.innerHTML = savedExpenses.map(e=> `
+    <tr>
+      <td><button class="btn-star saved" onclick="toggleSaved(${e.id})" title="Remove from Saved">★</button></td>
+      <td>${e.date}</td>
+      <td>${e.merchant}</td>
+      <td><span class="tag">${e.category}</span></td>
+      <td class="amt num">$${e.amount.toFixed(2)}</td>
+    </tr>`).join("");
+}
+
 function deleteExpense(id){
   expenses = expenses.filter(e=>e.id !== id);
+  savedIds = savedIds.filter(x=>x!==id);
   saveExpenses();
+  saveSavedIds();
   renderAll();
 }
 
@@ -158,7 +291,7 @@ function renderCategoryChart(){
 
   const labels = Object.keys(totals);
   const data = Object.values(totals);
-  const colors = ["#3f6fee","#22a06b","#e0a72d","#e05252","#9b59d0","#1abc9c","#e67e22","#7f8c8d"];
+  const colors = ["#1f8a70","#c98a2c","#c0392b","#5b7fd6","#9b59d0","#2c9c9c","#d67e3c","#8a8674"];
 
   const ctx = document.getElementById("categoryChart");
   if(categoryChart) categoryChart.destroy();
@@ -171,9 +304,7 @@ function renderCategoryChart(){
   categoryChart = new Chart(ctx, {
     type: "doughnut",
     data: { labels, datasets:[{ data, backgroundColor: colors }]},
-    options: {
-      plugins:{ legend:{ position:"bottom", labels:{ font:{size:11} } } }
-    }
+    options: { plugins:{ legend:{ position:"bottom", labels:{ font:{size:11} } } } }
   });
 }
 
@@ -188,9 +319,7 @@ function renderTrendChart(){
     totalsByDay[key] = 0;
   }
   expenses.forEach(e=>{
-    if(totalsByDay.hasOwnProperty(e.date)){
-      totalsByDay[e.date] += e.amount;
-    }
+    if(totalsByDay.hasOwnProperty(e.date)){ totalsByDay[e.date] += e.amount; }
   });
 
   const ctx = document.getElementById("trendChart");
@@ -199,7 +328,7 @@ function renderTrendChart(){
     type: "bar",
     data: {
       labels: days.map(d=>d.slice(5)),
-      datasets: [{ label:"Spend", data: days.map(d=>totalsByDay[d]), backgroundColor:"#3f6fee" }]
+      datasets: [{ label:"Spend", data: days.map(d=>totalsByDay[d]), backgroundColor:"#1f8a70" }]
     },
     options: {
       plugins:{ legend:{ display:false } },
@@ -216,10 +345,7 @@ function renderInsights(){
   }
 
   const byMonth = {};
-  expenses.forEach(e=>{
-    const k = monthKeyOf(e.date);
-    byMonth[k] = (byMonth[k]||0) + e.amount;
-  });
+  expenses.forEach(e=>{ const k = monthKeyOf(e.date); byMonth[k] = (byMonth[k]||0) + e.amount; });
   const months = Object.keys(byMonth).sort();
   const values = months.map(m=>byMonth[m]);
 
@@ -253,14 +379,10 @@ function renderInsights(){
     html += `<div class="insight">🏷️ Your top spending category this month is <strong>${topCat[0]}</strong> at $${topCat[1].toFixed(2)}.</div>`;
   }
 
-  const counts = {};
-  expenses.forEach(e=>{
-    const k = e.merchant.toLowerCase()+"_"+Math.round(e.amount);
-    counts[k] = (counts[k]||0)+1;
-  });
+  const counts = recurringCounts();
   const recurringCount = Object.values(counts).filter(c=>c>=2).length;
   if(recurringCount > 0){
-    html += `<div class="insight">🔁 Detected ${recurringCount} likely recurring charge${recurringCount>1?'s':''} (e.g. subscriptions). Review them for anything you no longer use.</div>`;
+    html += `<div class="insight">🔁 Detected ${recurringCount} likely recurring charge${recurringCount>1?'s':''}. See the Services page for details.</div>`;
   }
 
   box.innerHTML = html;
@@ -290,9 +412,40 @@ function renderBudgets(){
     return `
       <div class="budget-item">
         <div style="flex:1;">
-          <div>${cat}: $${spent.toFixed(2)} / $${limit.toFixed(2)}${note}</div>
+          <div>${cat}: <span class="num">$${spent.toFixed(2)} / $${limit.toFixed(2)}</span>${note}</div>
           <div class="budget-bar-bg"><div class="budget-bar-fill" style="width:${pct}%;background:${barColor};"></div></div>
         </div>
+      </div>`;
+  }).join("");
+}
+
+function renderServices(){
+  const box = document.getElementById("servicesList");
+  const counts = recurringCounts();
+  // Build one entry per recurring merchant+amount pair, using the most recent occurrence
+  const seen = {};
+  expenses.forEach(e=>{
+    const key = e.merchant.toLowerCase() + "_" + Math.round(e.amount);
+    if(counts[key] >= 2){
+      if(!seen[key] || new Date(e.date) > new Date(seen[key].date)){ seen[key] = e; }
+    }
+  });
+  const services = Object.entries(seen);
+
+  if(services.length === 0){
+    box.innerHTML = '<p class="empty">No recurring charges detected yet. These show up once a merchant + amount repeats at least twice.</p>';
+    return;
+  }
+
+  box.innerHTML = services.map(([key, e])=>{
+    const timesSeen = counts[key];
+    return `
+      <div class="service-card">
+        <div>
+          <div class="name">${e.merchant}</div>
+          <div class="meta">${e.category} · seen ${timesSeen} times · last charge ${e.date}</div>
+        </div>
+        <div class="amt num">$${e.amount.toFixed(2)}</div>
       </div>`;
   }).join("");
 }
@@ -304,6 +457,8 @@ function renderAll(){
   renderTrendChart();
   renderInsights();
   renderBudgets();
+  renderServices();
+  renderSaved();
 }
 
 filterSelect.addEventListener("change", renderTable);
@@ -325,5 +480,6 @@ document.getElementById("exportCsvBtn").addEventListener("click", ()=>{
 });
 
 
-renderBudgetInputs();
-renderAll();
+if(existingSession && loadUsers()[existingSession]){
+  enterApp(existingSession);
+}
